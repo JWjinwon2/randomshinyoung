@@ -497,7 +497,7 @@ function playView() {
   return `
     <main class="screen play-screen rarity-bg-${pet.rarity}">
       ${state.confetti ? '<div class="confetti"></div><div class="confetti c2"></div><div class="confetti c3"></div>' : ''}
-      ${state.rarityBurst ? '<div class="rarity-burst">RARE DROP</div>' : ''}
+      ${state.rarityBurst ? '<div class="rarity-burst">RARITY SET</div>' : ''}
       <header class="game-top">
         <button class="back" data-logout="true">끝내기</button>
         <div>
