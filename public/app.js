@@ -422,7 +422,7 @@ function menuView() {
   return `
     <main class="screen menu-screen">
       <section class="hero">
-        <div class="brand-badge">online tamagotchi.exe</div>
+        <div class="brand-badge">random shinyoung.exe</div>
         <h1>랜덤시녕 키우기</h1>
         <p>회색 고양이, 세 줄 무늬, 약간 이상한 귀여움. 오늘도 저장되는 랜덤한 성장.</p>
         <div class="menu-cat">${catMarkup()}</div>
