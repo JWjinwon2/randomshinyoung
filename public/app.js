@@ -83,6 +83,22 @@ const staticInteractions = {
   pat: { label: '쓰다듬기', min: 5, max: 14, animation: 'purr' },
   walk: { label: '산책가기', min: 12, max: 26, animation: 'walk' }
 };
+const staticSpecialRates = { wash: 0.12, play: 0.15, snack: 0.18, sleep: 0.1, pat: 0.2, walk: 0.14 };
+const staticNormalLines = [
+  '지금 완전 행복해진 것 같아요.',
+  '랜덤시녕이 당신을 빤히 봅니다. 판단은 보류.',
+  '꼬리가 물음표 모양으로 말렸어요.',
+  '작은 발소리가 들리면 랜덤시녕이 통통 뛰어옵니다.',
+  '기분이 좋아서 회색 털이 조금 더 반짝여요.',
+  '랜덤시녕은 저장 버튼 없이도 마음속에 저장되고 싶어합니다.'
+];
+const staticSpecialLines = [
+  '특별 반응! 랜덤시녕이 0.7초 동안 우주의 비밀을 이해했습니다.',
+  '대박! 그 사이 세 줄무늬가 잠깐 반짝였습니다.',
+  '특별 반응! 랜덤시녕이 이름 모를 반짝임을 생성했습니다.',
+  '희귀한 순간! 랜덤시녕이 화면 밖으로 생각을 튕겼습니다.'
+];
+
 const staticMoods = [
   { name: '말랑함', bonus: 1.05, line: '오늘은 말랑한 기분이라 보너스 XP가 살짝 붙어요.' },
   { name: '하이텐션', bonus: 1.2, line: '랜덤시녕이 우다다 모드입니다. XP 보너스!' },
@@ -292,7 +308,10 @@ async function staticRequest(path, options = {}) {
     }
     const mood = staticMoods.find((item) => item.name === pet.mood) ?? staticMoods[0];
     const raw = config.min + Math.floor(Math.random() * (config.max - config.min + 1));
-    const resultXp = Math.max(1, Math.round(raw * mood.bonus));
+    const special = Math.random() < (staticSpecialRates[body.action] ?? 0);
+    const specialBonus = special ? 1.35 : 1;
+    const lines = special ? staticSpecialLines : staticNormalLines;
+    const resultXp = Math.max(1, Math.round(raw * mood.bonus * specialBonus));
     const grantedXp = Math.min(resultXp, Math.max(0, 5000 - pet.dailyXp));
     pet.xp += grantedXp;
     pet.dailyXp += grantedXp;
@@ -314,12 +333,12 @@ async function staticRequest(path, options = {}) {
       collection: staticCollection(pet),
       result: {
         xp: grantedXp,
-        special: false,
+        special,
         dailyCapReached: grantedXp <= 0,
         partiallyCapped: grantedXp > 0 && grantedXp < resultXp,
         label: config.label,
         animation: config.animation,
-        message: '기분이 좋아서 회색 털이 조금 더 반짝여요.',
+        message: lines[Math.floor(Math.random() * lines.length)],
         leveled: unlockedLevels.length > 0,
         unlockedLevels
       }
