@@ -1,3 +1,4 @@
+const titles = ['행복한', '불쌍한', '배고픈', '피곤한', '쾌활한', '멋진', '우주적인', '수상한', '반짝이는', '졸린'];
 const rarities = ['노멀', '레어', '에픽', '유니크', '레전더리', '초초초'];
 const achievementConditions = {
   first_touch: '상호작용을 1번 하면 달성',
@@ -345,7 +346,7 @@ async function staticRequest(path, options = {}) {
     };
   }
 
-  if (route === '/api/title-options') return { options: ['행복한', '멋진', '반짝이는'] };
+  if (route === '/api/title-options') return { options: [...titles].sort(() => Math.random() - 0.5).slice(0, 3) };
   if (route === '/api/choose-title') {
     pet.title = body.title;
     pet.titleRolls = Math.max(0, pet.titleRolls - 1);
