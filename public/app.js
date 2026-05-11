@@ -71,6 +71,9 @@ const state = {
 const $ = (selector) => document.querySelector(selector);
 const app = $('#app');
 const staticMode = location.hostname.endsWith('github.io') || location.protocol === 'file:';
+const staticRapidActionWindows = new Map();
+const staticRapidActionWindowMs = 3000;
+const staticRapidActionLimit = 3;
 
 const staticInteractions = {
   wash: { label: '씻어주기', min: 8, max: 16, animation: 'splash' },
@@ -171,6 +174,15 @@ function staticCurrentPet(data) {
   return data.pets.find((pet) => pet.id === data.session) ?? null;
 }
 
+function staticIsRapidRepeatedAction(petId, action) {
+  const now = Date.now();
+  const key = `${petId}:${action}`;
+  const recent = (staticRapidActionWindows.get(key) ?? []).filter((time) => now - time <= staticRapidActionWindowMs);
+  recent.push(now);
+  staticRapidActionWindows.set(key, recent);
+  return recent.length >= staticRapidActionLimit;
+}
+
 async function staticRequest(path, options = {}) {
   const data = staticRead();
   const body = options.body ? JSON.parse(options.body) : {};
@@ -258,6 +270,22 @@ async function staticRequest(path, options = {}) {
   if (route === '/api/interact') {
     const config = staticInteractions[body.action];
     if (!config) throw new Error('지원하지 않는 상호작용입니다.');
+    if (staticIsRapidRepeatedAction(pet.id, body.action)) {
+      return {
+        pet: staticPetPayload(pet),
+        collection: staticCollection(pet),
+        result: {
+          xp: 0,
+          special: false,
+          blocked: true,
+          label: config.label,
+          animation: 'annoyed',
+          message: '너무 빠르게 반복해서 랜덤시녕 입이 M이 되었습니다. 천천히만 해주세요.',
+          leveled: false,
+          unlockedLevels: []
+        }
+      };
+    }
     if (pet.dailyXpDate !== staticToday()) {
       pet.dailyXp = 0;
       pet.dailyXpDate = staticToday();
