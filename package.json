@@ -1,0 +1,15 @@
+{
+  "name": "random-shinyeong-pet",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "랜덤시녕 키우기 - 웹 기반 온라인 다마고치 게임",
+  "scripts": {
+    "dev": "node --experimental-sqlite server/index.mjs",
+    "start": "node --experimental-sqlite server/index.mjs",
+    "seed": "node --experimental-sqlite scripts/seed.mjs"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

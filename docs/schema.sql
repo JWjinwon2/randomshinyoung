@@ -1,0 +1,56 @@
+PRAGMA foreign_keys = ON;
+
+CREATE TABLE IF NOT EXISTS pets (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL UNIQUE,
+  password_hash TEXT NOT NULL,
+  password_salt TEXT NOT NULL,
+  level INTEGER NOT NULL DEFAULT 1,
+  xp INTEGER NOT NULL DEFAULT 0,
+  daily_xp INTEGER NOT NULL DEFAULT 0,
+  daily_xp_date TEXT,
+  owner_message TEXT NOT NULL DEFAULT '',
+  title TEXT,
+  rarity TEXT NOT NULL DEFAULT '노멀',
+  title_rolls INTEGER NOT NULL DEFAULT 0,
+  rarity_rolls INTEGER NOT NULL DEFAULT 0,
+  mood TEXT NOT NULL DEFAULT '말랑함',
+  mood_date TEXT NOT NULL,
+  interaction_count INTEGER NOT NULL DEFAULT 0,
+  pat_count INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS collection_titles (
+  pet_id INTEGER NOT NULL,
+  title TEXT NOT NULL,
+  acquired_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (pet_id, title),
+  FOREIGN KEY (pet_id) REFERENCES pets(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS collection_rarities (
+  pet_id INTEGER NOT NULL,
+  rarity TEXT NOT NULL,
+  acquired_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (pet_id, rarity),
+  FOREIGN KEY (pet_id) REFERENCES pets(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS achievements (
+  pet_id INTEGER NOT NULL,
+  code TEXT NOT NULL,
+  label TEXT NOT NULL,
+  unlocked_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (pet_id, code),
+  FOREIGN KEY (pet_id) REFERENCES pets(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS sessions (
+  token TEXT PRIMARY KEY,
+  pet_id INTEGER NOT NULL,
+  expires_at TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (pet_id) REFERENCES pets(id) ON DELETE CASCADE
+);
