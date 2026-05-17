@@ -712,7 +712,10 @@ function clearInteractionTask() {
 function trackTaskPointer(event) {
   taskPointer.x = event.clientX;
   taskPointer.y = event.clientY;
-  if (state.interactionTask?.type === 'wash') makeWaterDrop(event.clientX, event.clientY);
+  if (state.interactionTask?.type === 'wash' && pointerOverCat()) {
+    makeWaterDrop(event.clientX, event.clientY);
+    updateTaskProgress((state.interactionTask.progress ?? 0) + 2.2);
+  }
   if (state.interactionTask?.type === 'pat' && pointerOverCat()) {
     const distance = Math.hypot(taskPointer.x - taskPointer.lastX, taskPointer.y - taskPointer.lastY);
     taskPointer.lastX = taskPointer.x;
@@ -761,9 +764,6 @@ function startInteractionTask(type) {
   setState({ interactionTask: base, message: messages[type] });
   if (type === 'wash') {
     document.addEventListener('pointermove', trackTaskPointer);
-    interactionTimer = setInterval(() => {
-      if (pointerOverCat()) updateTaskProgress((state.interactionTask?.progress ?? 0) + 3);
-    }, 120);
   }
   if (type === 'pat') {
     document.addEventListener('pointermove', trackTaskPointer);
