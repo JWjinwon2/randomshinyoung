@@ -174,14 +174,28 @@ export function getCollections(petId) {
   };
 }
 
-export function listPets({ search = '', rarity = '' }) {
+const raritySortSql = `CASE rarity
+    WHEN '초초초' THEN 6
+    WHEN '레전더리' THEN 5
+    WHEN '유니크' THEN 4
+    WHEN '에픽' THEN 3
+    WHEN '레어' THEN 2
+    ELSE 1
+  END`;
+
+export function listPets({ search = '', sort = 'time', order = 'desc' }) {
+  const direction = order === 'asc' ? 'ASC' : 'DESC';
+  const orderSql = {
+    time: `created_at ${direction}, id ${direction}`,
+    level: `level ${direction}, xp ${direction}, id ${direction}`,
+    rarity: `${raritySortSql} ${direction}, level ${direction}, id ${direction}`
+  }[sort] ?? `created_at ${direction}, id ${direction}`;
   const rows = db.prepare(`
     SELECT id, name, level, title, rarity, owner_message, created_at
     FROM pets
     WHERE (? = '' OR lower(name) LIKE '%' || lower(?) || '%')
-      AND (? = '' OR rarity = ?)
-    ORDER BY level DESC, xp DESC, created_at ASC
-  `).all(search, search, rarity, rarity);
+    ORDER BY ${orderSql}
+  `).all(search, search);
   return rows.map((row) => ({
     id: row.id,
     name: row.name,
@@ -191,6 +205,10 @@ export function listPets({ search = '', rarity = '' }) {
     ownerMessage: row.owner_message,
     createdAt: row.created_at
   }));
+}
+
+export function deletePet(id) {
+  db.prepare('DELETE FROM pets WHERE id = ?').run(id);
 }
 
 export function createSession(petId) {

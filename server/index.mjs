@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import {
   createPet,
   createSession,
+  deletePet,
   deleteSession,
   getCollections,
   getPetById,
@@ -189,8 +190,21 @@ async function api(req, res, path) {
     if (req.method === 'GET' && path === '/api/pets') {
       const url = new URL(req.url, 'http://localhost');
       return json(res, 200, {
-        pets: listPets({ search: url.searchParams.get('search') ?? '', rarity: url.searchParams.get('rarity') ?? '' })
+        pets: listPets({
+          search: url.searchParams.get('search') ?? '',
+          sort: url.searchParams.get('sort') ?? 'time',
+          order: url.searchParams.get('order') ?? 'desc'
+        })
       });
+    }
+
+    if (req.method === 'DELETE' && path === '/api/pet') {
+      const cookies = parseCookies(req.headers.cookie);
+      const pet = authPet(req);
+      if (!pet) return error(res, 401, '로그인이 필요합니다.');
+      deletePet(pet.id);
+      if (cookies.rs_session) deleteSession(cookies.rs_session);
+      return json(res, 200, { ok: true }, { 'Set-Cookie': 'rs_session=; Path=/; Max-Age=0' });
     }
 
     if (req.method === 'POST' && path === '/api/owner-message') {

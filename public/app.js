@@ -1,4 +1,4 @@
-const titles = ['행복한', '불쌍한', '배고픈', '피곤한', '쾌활한', '멋진', '우주적인', '수상한', '졸린'];
+const titles = ['행복한', '불쌍한', '배고픈', '피곤한', '쾌활한', '멋진', '우주적인', '수상한', '반짝이는', '졸린'];
 const rarities = ['노멀', '레어', '에픽', '유니크', '레전더리', '초초초'];
 const achievementConditions = {
   first_touch: '상호작용을 1번 하면 달성',
@@ -66,12 +66,13 @@ const state = {
   confetti: false,
   rarityBurst: false,
   loading: false,
-  filters: { search: '', rarity: '' }
+  filters: { search: '', sort: 'time', order: 'desc' },
+  interactionTask: null
 };
 
 const $ = (selector) => document.querySelector(selector);
 const app = $('#app');
-const staticMode = location.hostname.endsWith('github.io') || location.protocol === 'file:';
+const staticMode = location.hostname.endsWith('github.io') || location.protocol === 'file:' || location.search.includes('static=1');
 const staticRapidActionWindows = new Map();
 const staticRapidActionWindowMs = 3000;
 const staticRapidActionLimit = 3;
@@ -85,6 +86,8 @@ const staticInteractions = {
   walk: { label: '산책가기', min: 12, max: 26, animation: 'walk' }
 };
 const staticSpecialRates = { wash: 0.12, play: 0.15, snack: 0.18, sleep: 0.1, pat: 0.2, walk: 0.14 };
+const titlePool = titles;
+const rarityRank = { '노멀': 1, '레어': 2, '에픽': 3, '유니크': 4, '레전더리': 5, '초초초': 6 };
 const staticNormalLines = [
   '지금 완전 행복해진 것 같아요.',
   '랜덤시녕이 당신을 빤히 봅니다. 판단은 보류.',
@@ -263,13 +266,29 @@ async function staticRequest(path, options = {}) {
     return { ok: true };
   }
 
+  if (route === '/api/pet') {
+    if (options.method !== 'DELETE') throw new Error('지원하지 않는 요청입니다.');
+    const pet = staticCurrentPet(data);
+    if (!pet) throw new Error('로그인이 필요합니다.');
+    data.pets = data.pets.filter((item) => item.id !== pet.id);
+    data.session = null;
+    staticWrite(data);
+    return { ok: true };
+  }
+
   if (route === '/api/pets') {
     const params = new URLSearchParams(query);
     const search = params.get('search') ?? '';
-    const rarity = params.get('rarity') ?? '';
+    const sort = params.get('sort') ?? 'time';
+    const order = params.get('order') === 'asc' ? 'asc' : 'desc';
+    const direction = order === 'asc' ? 1 : -1;
     const pets = data.pets
-      .filter((pet) => (!search || pet.name.includes(search)) && (!rarity || pet.rarity === rarity))
-      .sort((a, b) => b.level - a.level || b.xp - a.xp)
+      .filter((pet) => !search || pet.name.includes(search))
+      .sort((a, b) => {
+        if (sort === 'level') return ((a.level - b.level) || (a.xp - b.xp) || (a.id - b.id)) * direction;
+        if (sort === 'rarity') return (((rarityRank[a.rarity] ?? 0) - (rarityRank[b.rarity] ?? 0)) || (a.id - b.id)) * direction;
+        return (new Date(a.createdAt) - new Date(b.createdAt)) * direction;
+      })
       .map(({ id, name, level, title, rarity, ownerMessage, createdAt }) => ({ id, name, level, title, rarity, ownerMessage, createdAt }));
     return { pets };
   }
@@ -346,7 +365,7 @@ async function staticRequest(path, options = {}) {
     };
   }
 
-  if (route === '/api/title-options') return { options: [...titles].sort(() => Math.random() - 0.5).slice(0, 3) };
+  if (route === '/api/title-options') return { options: shuffled(titlePool).slice(0, 3) };
   if (route === '/api/choose-title') {
     pet.title = body.title;
     pet.titleRolls = Math.max(0, pet.titleRolls - 1);
@@ -378,6 +397,15 @@ function escapeHtml(value = '') {
   return String(value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 }
 
+function shuffled(items) {
+  const copy = [...items];
+  for (let i = copy.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
 function normalizePetNameInput(value = '') {
   const compact = String(value).trim().replace(/\s+/g, '');
   if (!compact) return '';
@@ -402,13 +430,15 @@ function playTone(type = 'tap') {
 }
 
 function catMarkup() {
+  const sleeping = state.interactionTask?.type === 'sleep';
+  const eye = sleeping ? '-' : '^';
   return `
-    <div class="cat ${state.animation}" aria-label="회색 고양이 랜덤시녕">
+    <div class="cat ${state.animation}" data-cat="true" aria-label="회색 고양이 랜덤시녕">
       <div class="ear left"></div>
       <div class="ear right"></div>
       <div class="head">
         <div class="stripe s1"></div><div class="stripe s2"></div><div class="stripe s3"></div>
-        <div class="kawaii-face" aria-hidden="true"><span class="eye-mark">^</span><span class="mouth-w ${state.faceMood === 'annoyed' ? 'annoyed' : ''}">${state.faceMood === 'annoyed' ? 'M' : 'W'}</span><span class="eye-mark">^</span></div>
+        <div class="kawaii-face" aria-hidden="true"><span class="eye-mark">${eye}</span><span class="mouth-w ${state.faceMood === 'annoyed' ? 'annoyed' : ''}">${state.faceMood === 'annoyed' ? 'M' : 'W'}</span><span class="eye-mark">${eye}</span></div>
         <div class="whisker w1"></div><div class="whisker w2"></div><div class="whisker w3"></div>
         <div class="whisker w4"></div><div class="whisker w5"></div><div class="whisker w6"></div>
       </div>
@@ -473,9 +503,14 @@ function archiveView() {
       </header>
       <section class="filters">
         <input id="searchInput" placeholder="이름 검색" value="${escapeHtml(state.filters.search)}" />
-        <select id="rarityFilter">
-          <option value="">전체 희귀도</option>
-          ${rarities.map((r) => `<option value="${r}" ${state.filters.rarity === r ? 'selected' : ''}>${r}</option>`).join('')}
+        <select id="sortFilter">
+          <option value="time" ${state.filters.sort === 'time' ? 'selected' : ''}>시간순</option>
+          <option value="level" ${state.filters.sort === 'level' ? 'selected' : ''}>레벨순</option>
+          <option value="rarity" ${state.filters.sort === 'rarity' ? 'selected' : ''}>희귀도순</option>
+        </select>
+        <select id="orderFilter">
+          <option value="desc" ${state.filters.order === 'desc' ? 'selected' : ''}>내림차순</option>
+          <option value="asc" ${state.filters.order === 'asc' ? 'selected' : ''}>오름차순</option>
         </select>
       </section>
       <section class="card-grid">${cards || '<p class="empty">아직 저장된 랜덤시녕이 없습니다.</p>'}</section>
@@ -487,16 +522,37 @@ function achievementButton(achievement) {
   return `<button class="achievement-chip" data-achievement-code="${escapeHtml(achievement.code)}" type="button">${escapeHtml(achievement.label)}</button>`;
 }
 
+function interactionTaskView() {
+  const task = state.interactionTask;
+  if (!task) return '';
+  const progress = Math.min(100, Math.round(task.progress ?? 0));
+  const labels = {
+    wash: '마우스를 랜덤시녕 위에 두고 물을 뿌려주세요',
+    play: `랜덤시녕을 ${Math.max(0, 10 - (task.clicks ?? 0))}번 더 클릭하세요`,
+    pat: '마우스를 랜덤시녕 위로 왔다갔다 움직여주세요',
+    sleep: `자는 중... ${Math.max(0, task.remaining ?? 60)}초`,
+    walk: '스페이스/탭으로 점프해서 산책길을 통과하세요'
+  };
+  return `
+    <div class="task-panel task-${task.type}">
+      <strong>${labels[task.type] ?? '상호작용 진행 중'}</strong>
+      <div class="task-progress"><i style="width:${progress}%"></i></div>
+      ${task.type === 'walk' ? '<div class="runner-game" tabindex="0"><div class="runner-pet"></div><div class="runner-obstacle"></div><span class="runner-score">0</span></div>' : ''}
+    </div>
+  `;
+}
+
 function playView() {
   const pet = state.pet;
   const xpPercent = Math.min(100, Math.round((pet.xp / pet.requiredXp) * 100));
   const dailyXpPercent = Math.min(100, Math.round((pet.dailyXp / pet.dailyXpLimit) * 100));
+  const taskActive = Boolean(state.interactionTask);
   const interactionButtons = pet.interactions.map((item) => `
-    <button class="action-btn" data-action="${item.key}">${item.label}</button>
+    <button class="action-btn" data-action="${item.key}" ${taskActive ? 'disabled' : ''}>${item.label}</button>
   `).join('');
 
   return `
-    <main class="screen play-screen rarity-bg-${pet.rarity}">
+    <main class="screen play-screen rarity-bg-${pet.rarity} ${state.interactionTask?.type === 'sleep' ? 'sleep-mode' : ''}">
       ${state.confetti ? '<div class="confetti"></div><div class="confetti c2"></div><div class="confetti c3"></div>' : ''}
       ${state.rarityBurst ? '<div class="rarity-burst">RARITY SET</div>' : ''}
       <header class="game-top">
@@ -518,15 +574,17 @@ function playView() {
         <section class="pet-stage">
           ${catMarkup()}
           <div class="speech">${escapeHtml(state.message)}</div>
+          ${interactionTaskView()}
         </section>
         <aside class="control-panel">
           <div class="actions">${interactionButtons}</div>
           <form id="ownerMessageForm" class="owner-message-form">
-            <label>주인 메시지<input name="ownerMessage" maxlength="80" value="${escapeHtml(pet.ownerMessage ?? '')}" placeholder="짧은 메시지를 남겨주세요" /></label>
-            <button class="ghost save-message" type="submit">저장</button>
+            <label>주인 메시지<input name="ownerMessage" maxlength="80" value="${escapeHtml(pet.ownerMessage ?? '')}" placeholder="짧은 메시지를 남겨주세요" ${taskActive ? 'disabled' : ''} /></label>
+            <button class="ghost save-message" type="submit" ${taskActive ? 'disabled' : ''}>저장</button>
           </form>
-          <button class="roll title-roll" ${pet.titleRolls ? '' : 'disabled'}>칭호 바꾸기 (${pet.titleRolls})</button>
-          <button class="roll rarity-roll" ${pet.rarityRolls ? '' : 'disabled'}>희귀도 바꾸기 (${pet.rarityRolls})</button>
+          <button class="roll title-roll" ${pet.titleRolls && !taskActive ? '' : 'disabled'}>칭호 바꾸기 (${pet.titleRolls})</button>
+          <button class="roll rarity-roll" ${pet.rarityRolls && !taskActive ? '' : 'disabled'}>희귀도 바꾸기 (${pet.rarityRolls})</button>
+          <button class="danger delete-pet" ${taskActive ? 'disabled' : ''}>랜덤시녕 삭제</button>
         </aside>
       </section>
       <section class="tabs">
@@ -614,6 +672,7 @@ function bindEvents() {
 
   $('.title-roll')?.addEventListener('click', getTitleOptions);
   $('.rarity-roll')?.addEventListener('click', rollRarity);
+  $('.delete-pet')?.addEventListener('click', deleteCurrentPet);
   $('#ownerMessageForm')?.addEventListener('submit', saveOwnerMessage);
   document.querySelectorAll('[data-achievement-code]').forEach((button) => {
     button.addEventListener('click', showAchievementCondition);
@@ -623,13 +682,18 @@ function bindEvents() {
     state.filters.search = event.target.value;
     loadArchive();
   }, 200));
-  $('#rarityFilter')?.addEventListener('change', (event) => {
-    state.filters.rarity = event.target.value;
+  $('#sortFilter')?.addEventListener('change', (event) => {
+    state.filters.sort = event.target.value;
+    loadArchive();
+  });
+  $('#orderFilter')?.addEventListener('change', (event) => {
+    state.filters.order = event.target.value;
     loadArchive();
   });
   document.querySelectorAll('[data-title]').forEach((button) => {
     button.addEventListener('click', () => chooseTitle(button.dataset.title));
   });
+  bindInteractionTask();
 }
 
 function debounce(fn, wait) {
@@ -640,6 +704,171 @@ function debounce(fn, wait) {
   };
 }
 
+let interactionTimer = null;
+let walkerFrame = null;
+let taskPointer = { x: 0, y: 0, lastX: 0, lastY: 0 };
+
+function clearInteractionTask() {
+  clearInterval(interactionTimer);
+  interactionTimer = null;
+  cancelAnimationFrame(walkerFrame);
+  walkerFrame = null;
+  document.removeEventListener('pointermove', trackTaskPointer);
+}
+
+function trackTaskPointer(event) {
+  taskPointer.x = event.clientX;
+  taskPointer.y = event.clientY;
+  if (state.interactionTask?.type === 'wash') makeWaterDrop(event.clientX, event.clientY);
+  if (state.interactionTask?.type === 'pat' && pointerOverCat()) {
+    const distance = Math.hypot(taskPointer.x - taskPointer.lastX, taskPointer.y - taskPointer.lastY);
+    taskPointer.lastX = taskPointer.x;
+    taskPointer.lastY = taskPointer.y;
+    updateTaskProgress((state.interactionTask.progress ?? 0) + Math.min(8, distance / 8));
+  }
+}
+
+function pointerOverCat() {
+  const cat = document.querySelector('.pet-stage [data-cat]');
+  if (!cat) return false;
+  const rect = cat.getBoundingClientRect();
+  return taskPointer.x >= rect.left && taskPointer.x <= rect.right && taskPointer.y >= rect.top && taskPointer.y <= rect.bottom;
+}
+
+function makeWaterDrop(x, y) {
+  const drop = document.createElement('i');
+  drop.className = 'water-drop';
+  drop.style.left = `${x}px`;
+  drop.style.top = `${y}px`;
+  document.body.append(drop);
+  setTimeout(() => drop.remove(), 700);
+}
+
+function updateTaskProgress(progress) {
+  if (!state.interactionTask) return;
+  state.interactionTask = { ...state.interactionTask, progress: Math.min(100, progress) };
+  render();
+  if (state.interactionTask.progress >= 100 && state.interactionTask.type !== 'pat') completeInteractionTask();
+  if (state.interactionTask?.type === 'pat' && state.interactionTask.progress >= 100 && Date.now() - state.interactionTask.startedAt >= 3000) {
+    completeInteractionTask();
+  }
+}
+
+function startInteractionTask(type) {
+  clearInteractionTask();
+  const base = { type, progress: 0, startedAt: Date.now(), clicks: 0, remaining: 60 };
+  state.interactionTask = base;
+  const messages = {
+    wash: '마우스에서 물이 떨어집니다. 랜덤시녕에게 몇 초간 뿌려주세요.',
+    play: '랜덤시녕을 10번 클릭하면 놀아주기가 완료됩니다.',
+    sleep: '랜덤시녕이 잠들었습니다. 1분 뒤 경험치를 받아요.',
+    pat: '랜덤시녕 위로 마우스를 부드럽게 왔다갔다 해주세요.',
+    walk: '산책 미니게임 시작! 장애물을 넘어서 클리어하세요.'
+  };
+  setState({ interactionTask: base, message: messages[type] });
+  if (type === 'wash') {
+    document.addEventListener('pointermove', trackTaskPointer);
+    interactionTimer = setInterval(() => {
+      if (pointerOverCat()) updateTaskProgress((state.interactionTask?.progress ?? 0) + 3);
+    }, 120);
+  }
+  if (type === 'pat') {
+    document.addEventListener('pointermove', trackTaskPointer);
+    interactionTimer = setInterval(() => {
+      if (state.interactionTask?.progress >= 100 && Date.now() - state.interactionTask.startedAt >= 3000) {
+        completeInteractionTask();
+      }
+    }, 200);
+  }
+  if (type === 'sleep') {
+    interactionTimer = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - base.startedAt) / 1000);
+      const remaining = Math.max(0, 60 - elapsed);
+      state.interactionTask = { ...state.interactionTask, remaining, progress: Math.min(100, (elapsed / 60) * 100) };
+      render();
+      if (remaining <= 0) completeInteractionTask();
+    }, 1000);
+  }
+}
+
+function bindInteractionTask() {
+  const task = state.interactionTask;
+  if (!task) return;
+  const cat = document.querySelector('.pet-stage [data-cat]');
+  if (task.type === 'play' && cat) {
+    cat.addEventListener('click', () => {
+      const clicks = (state.interactionTask?.clicks ?? 0) + 1;
+      state.interactionTask = { ...state.interactionTask, clicks, progress: Math.min(100, clicks * 10) };
+      render();
+      if (clicks >= 10) completeInteractionTask();
+    });
+  }
+  if (task.type === 'walk') setupWalkGame();
+}
+
+function setupWalkGame() {
+  const game = $('.runner-game');
+  const pet = $('.runner-pet');
+  const obstacle = $('.runner-obstacle');
+  const scoreLabel = $('.runner-score');
+  if (!game || game.dataset.ready) return;
+  game.dataset.ready = 'true';
+  game.focus();
+  let score = state.interactionTask.score ?? 0;
+  let jumping = false;
+  let obstacleX = 100;
+  let speed = 0.9;
+  const jump = () => {
+    if (jumping) return;
+    jumping = true;
+    pet.classList.add('jumping');
+    setTimeout(() => {
+      jumping = false;
+      pet.classList.remove('jumping');
+    }, 520);
+  };
+  game.addEventListener('pointerdown', jump);
+  game.addEventListener('keydown', (event) => {
+    if (state.interactionTask?.type === 'walk' && [' ', 'ArrowUp'].includes(event.key)) {
+      event.preventDefault();
+      jump();
+    }
+  });
+  const frame = () => {
+    if (state.interactionTask?.type !== 'walk') return;
+    obstacleX -= speed;
+    if (obstacleX < -10) {
+      obstacleX = 100;
+      score += 1;
+      speed += 0.06;
+      state.interactionTask = { ...state.interactionTask, score, progress: Math.min(100, score * 12.5) };
+      scoreLabel.textContent = score;
+      if (score >= 8) return completeInteractionTask();
+    }
+    obstacle.style.left = `${obstacleX}%`;
+    const petBox = pet.getBoundingClientRect();
+    const obstacleBox = obstacle.getBoundingClientRect();
+    const hit = petBox.left < obstacleBox.right && petBox.right > obstacleBox.left && petBox.bottom > obstacleBox.top && petBox.top < obstacleBox.bottom;
+    if (hit && !jumping) {
+      score = Math.max(0, score - 1);
+      obstacleX = 100;
+      state.interactionTask = { ...state.interactionTask, score, progress: Math.min(100, score * 12.5) };
+      setState({ message: '장애물에 닿았습니다. 다시 박자를 잡아보세요!' });
+      return;
+    }
+    walkerFrame = requestAnimationFrame(frame);
+  };
+  walkerFrame = requestAnimationFrame(frame);
+}
+
+async function completeInteractionTask() {
+  const task = state.interactionTask;
+  if (!task) return;
+  clearInteractionTask();
+  state.interactionTask = null;
+  await submitInteraction(task.type);
+}
+
 async function loadArchive() {
   const params = new URLSearchParams(state.filters);
   const data = await request(`/api/pets?${params}`);
@@ -647,6 +876,15 @@ async function loadArchive() {
 }
 
 async function interact(action) {
+  if (state.interactionTask) return;
+  if (action !== 'snack') {
+    startInteractionTask(action);
+    return;
+  }
+  await submitInteraction(action);
+}
+
+async function submitInteraction(action) {
   try {
     const data = await request('/api/interact', { method: 'POST', body: JSON.stringify({ action }) });
     playTone(data.result.leveled ? 'level' : 'tap');
@@ -656,11 +894,12 @@ async function interact(action) {
       message: `${data.result.label}: +${data.result.xp} XP · ${data.result.message}`,
       animation: data.result.animation,
       confetti: data.result.leveled,
-      faceMood: data.result.blocked ? 'annoyed' : ''
+      faceMood: data.result.blocked ? 'annoyed' : '',
+      interactionTask: null
     });
     setTimeout(() => setState({ animation: '', confetti: false, faceMood: '' }), data.result.blocked ? 1300 : 950);
   } catch (error) {
-    setState({ message: error.message });
+    setState({ message: error.message, interactionTask: null });
   }
 }
 
@@ -697,8 +936,18 @@ async function rollRarity() {
   setTimeout(() => setState({ rarityBurst: false, animation: '' }), 1200);
 }
 
+async function deleteCurrentPet() {
+  if (!state.pet) return;
+  const ok = confirm(`${state.pet.name}을(를) 정말 삭제할까요? 삭제하면 복구할 수 없습니다.`);
+  if (!ok) return;
+  await request('/api/pet', { method: 'DELETE' });
+  clearInteractionTask();
+  setState({ view: 'menu', pet: null, collection: { titles: [], rarities: [], achievements: [] }, message: '랜덤시녕을 삭제했습니다.' });
+}
+
 async function logout() {
   await request('/api/logout', { method: 'POST' });
+  clearInteractionTask();
   setState({ view: 'menu', pet: null, message: '' });
 }
 

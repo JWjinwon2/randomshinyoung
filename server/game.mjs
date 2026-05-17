@@ -73,7 +73,12 @@ export function rollRarity(level) {
 }
 
 export function rollTitleOptions(count = 3) {
-  return [...TITLES].sort(() => Math.random() - 0.5).slice(0, count);
+  const pool = [...TITLES];
+  for (let i = pool.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  return pool.slice(0, count);
 }
 
 export function rollInteraction(action, moodName) {
