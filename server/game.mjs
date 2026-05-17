@@ -123,3 +123,25 @@ export function displayName(pet) {
   const title = pet.title ? `${pet.title} ` : '';
   return `[${pet.rarity}] ${title}${pet.name}`;
 }
+
+app.post("/api/migrate", async (req, res) => {
+  try {
+    const data = req.body;
+
+    await pool.query(
+      `
+      INSERT INTO saves (save_data)
+      VALUES ($1)
+      `,
+      [JSON.stringify(data)]
+    );
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      success: false,
+      error: err.message,
+    });
+  }
+});
