@@ -970,3 +970,32 @@ async function boot() {
 }
 
 boot();
+
+async function migrateToServer() {
+  const oldData = localStorage.getItem("randomshinyoung-data");
+
+  if (!oldData) return;
+
+  if (localStorage.getItem("migration-complete")) return;
+
+  try {
+    const response = await fetch(
+      "https://randomshinyoung-api.onrender.com/api/migrate",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: oldData,
+      }
+    );
+
+    if (response.ok) {
+      localStorage.setItem("migration-complete", "true");
+    }
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+migrateToServer();
