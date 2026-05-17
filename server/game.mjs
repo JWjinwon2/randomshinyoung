@@ -9,12 +9,12 @@ export const MOODS = [
 ];
 
 export const INTERACTIONS = {
-  wash: { label: '씻어주기', min: 8, max: 16, animation: 'splash', specialRate: 0.12, achievement: null },
-  play: { label: '놀아주기', min: 10, max: 22, animation: 'bounce', specialRate: 0.15, achievement: null },
-  snack: { label: '간식주기', min: 7, max: 18, animation: 'nom', specialRate: 0.18, achievement: null },
-  sleep: { label: '재워주기', min: 6, max: 15, animation: 'sleepy', specialRate: 0.1, achievement: null },
-  pat: { label: '쓰다듬기', min: 5, max: 14, animation: 'purr', specialRate: 0.2, achievement: 'pat100' },
-  walk: { label: '산책가기', min: 12, max: 26, animation: 'walk', specialRate: 0.14, achievement: null }
+  wash: { label: '씻어주기', min: 4, max: 72, animation: 'splash', specialRate: 0.12, achievement: null },
+  play: { label: '놀아주기', min: 30, max: 80, animation: 'bounce', specialRate: 0.15, achievement: null },
+  snack: { label: '간식주기', min: 15, max: 32, animation: 'nom', specialRate: 0.18, achievement: null },
+  sleep: { label: '재워주기', min: 80, max: 90, animation: 'sleepy', specialRate: 0.1, achievement: null },
+  pat: { label: '쓰다듬기', min: 40, max: 50, animation: 'purr', specialRate: 0.2, achievement: 'pat100' },
+  walk: { label: '산책가기', min: 50, max: 60, animation: 'walk', specialRate: 0.14, achievement: null }
 };
 
 const NORMAL_LINES = [
