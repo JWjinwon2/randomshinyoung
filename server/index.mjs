@@ -28,7 +28,7 @@ const port = Number(process.env.PORT ?? process.argv[2] ?? 3000);
 const rapidActionWindows = new Map();
 const rapidActionWindowMs = 3000;
 const rapidActionLimit = 3;
-const dailyXpLimit = Number(process.env.DAILY_XP_LIMIT ?? 5000);
+const dailyXpLimit = Number(process.env.DAILY_XP_LIMIT ?? 50000);
 
 const achievements = [
   { code: 'first_touch', label: '첫 인사', test: (pet) => pet.interactionCount >= 1 },
