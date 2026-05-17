@@ -78,12 +78,12 @@ const staticRapidActionWindowMs = 3000;
 const staticRapidActionLimit = 3;
 
 const staticInteractions = {
-  wash: { label: '씻어주기', min: 8, max: 16, animation: 'splash' },
-  play: { label: '놀아주기', min: 10, max: 22, animation: 'bounce' },
-  snack: { label: '간식주기', min: 7, max: 18, animation: 'nom' },
-  sleep: { label: '재워주기', min: 6, max: 15, animation: 'sleepy' },
-  pat: { label: '쓰다듬기', min: 5, max: 14, animation: 'purr' },
-  walk: { label: '산책가기', min: 12, max: 26, animation: 'walk' }
+  wash: { label: '씻어주기', min: 4, max: 72, animation: 'splash' },
+  play: { label: '놀아주기', min: 30, max: 80, animation: 'bounce' },
+  snack: { label: '간식주기', min: 15, max: 32, animation: 'nom' },
+  sleep: { label: '재워주기', min: 80, max: 90, animation: 'sleepy' },
+  pat: { label: '쓰다듬기', min: 40, max: 50, animation: 'purr' },
+  walk: { label: '산책가기', min: 50, max: 60, animation: 'walk' }
 };
 const staticSpecialRates = { wash: 0.12, play: 0.15, snack: 0.18, sleep: 0.1, pat: 0.2, walk: 0.14 };
 const titlePool = titles;
