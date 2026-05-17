@@ -175,7 +175,7 @@ function staticPetPayload(pet) {
     ...pet,
     displayName: `[${pet.rarity}] ${pet.title ? `${pet.title} ` : ''}${pet.name}`,
     requiredXp: staticRequiredXp(pet.level),
-    dailyXpLimit: 5000,
+    dailyXpLimit: 50000,
     moodInfo,
     interactions: Object.entries(staticInteractions).map(([key, value]) => ({ key, label: value.label }))
   };
@@ -332,7 +332,7 @@ async function staticRequest(path, options = {}) {
     const specialBonus = special ? 1.35 : 1;
     const lines = special ? staticSpecialLines : staticNormalLines;
     const resultXp = Math.max(1, Math.round(raw * mood.bonus * specialBonus));
-    const grantedXp = Math.min(resultXp, Math.max(0, 5000 - pet.dailyXp));
+    const grantedXp = Math.min(resultXp, Math.max(0, 50000 - pet.dailyXp));
     pet.xp += grantedXp;
     pet.dailyXp += grantedXp;
     pet.interactionCount += 1;
