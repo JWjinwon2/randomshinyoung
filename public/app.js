@@ -512,6 +512,7 @@ function archiveView() {
           <option value="desc" ${state.filters.order === 'desc' ? 'selected' : ''}>내림차순</option>
           <option value="asc" ${state.filters.order === 'asc' ? 'selected' : ''}>오름차순</option>
         </select>
+        <button class="primary search-pets" type="button">검색</button>
       </section>
       <section class="card-grid">${cards || '<p class="empty">아직 저장된 랜덤시녕이 없습니다.</p>'}</section>
     </main>
@@ -678,17 +679,9 @@ function bindEvents() {
     button.addEventListener('click', showAchievementCondition);
   });
   $('[data-logout]')?.addEventListener('click', logout);
-  $('#searchInput')?.addEventListener('input', debounce((event) => {
-    state.filters.search = event.target.value;
-    loadArchive();
-  }, 200));
-  $('#sortFilter')?.addEventListener('change', (event) => {
-    state.filters.sort = event.target.value;
-    loadArchive();
-  });
-  $('#orderFilter')?.addEventListener('change', (event) => {
-    state.filters.order = event.target.value;
-    loadArchive();
+  $('.search-pets')?.addEventListener('click', searchArchive);
+  $('#searchInput')?.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') searchArchive();
   });
   document.querySelectorAll('[data-title]').forEach((button) => {
     button.addEventListener('click', () => chooseTitle(button.dataset.title));
@@ -873,6 +866,16 @@ async function loadArchive() {
   const params = new URLSearchParams(state.filters);
   const data = await request(`/api/pets?${params}`);
   state.pets = data.pets;
+}
+
+async function searchArchive() {
+  state.filters = {
+    search: $('#searchInput')?.value ?? '',
+    sort: $('#sortFilter')?.value ?? 'time',
+    order: $('#orderFilter')?.value ?? 'desc'
+  };
+  await loadArchive();
+  render();
 }
 
 async function interact(action) {

@@ -230,9 +230,12 @@ input, select {
 }
 .filters {
   display: grid;
-  grid-template-columns: 1fr 180px 180px;
+  grid-template-columns: 1fr 180px 180px auto;
   gap: .8rem;
   padding: 1rem;
+}
+.search-pets {
+  min-width: 96px;
 }
 .card-grid {
   display: grid;
